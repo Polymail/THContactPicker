@@ -475,7 +475,9 @@
 		// Adjust self height
 		CGRect selfFrame = self.frame;
 		selfFrame.size.height = newHeight;
-		self.frame = selfFrame;
+        
+        // NOTE(SHIN): This causes recursive loop and OOM crash
+//		self.frame = selfFrame;
 		
 		// Adjust scroll view height
 		frame.size.height = newHeight;
