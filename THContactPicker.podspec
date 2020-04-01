@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name         = 'THContactPicker'
-  s.version      = '2.3'
+  s.version      = '2.3.1'
   s.summary      = "Contact picker view controller vendored"
   s.homepage     = 'https://github.com/Polymail/THContactPicker'
 
