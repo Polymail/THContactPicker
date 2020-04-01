@@ -476,8 +476,9 @@
 		CGRect selfFrame = self.frame;
 		selfFrame.size.height = newHeight;
         
-        // NOTE(SHIN): This causes recursive loop and OOM crash
-//		self.frame = selfFrame;
+        // NOTE(SHIN): Initially commented out self.frame = selfFrame but setNeedsLayout seems to fix recursive looop crash for iOS 13
+		self.frame = selfFrame;
+        [self setNeedsLayout];
 		
 		// Adjust scroll view height
 		frame.size.height = newHeight;
