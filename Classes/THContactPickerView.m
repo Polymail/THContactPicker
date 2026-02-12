@@ -16,6 +16,7 @@
 	CGRect _frameOfLastView;
 	CGFloat _contactHorizontalPadding;
 	BOOL _showComma;
+	CGFloat _lastReportedHeight;
 }
 
 @property (nonatomic, strong) UIScrollView *scrollView;
@@ -63,6 +64,7 @@
 	
     self.contacts = [NSMutableDictionary dictionary];
     self.contactKeys = [NSMutableArray array];
+    _lastReportedHeight = 0.0;
     
     // Create a contact view to determine the height of a line
     self.scrollView = [[UIScrollView alloc] initWithFrame:self.bounds];
@@ -468,21 +470,40 @@
 	CGFloat maxFrameHeight = self.maxNumberOfLines * self.lineHeight + 2 * self.verticalPadding; // limit frame to two lines of content
 	CGFloat newHeight = (_lineCount + 1) * self.lineHeight + 2 * self.verticalPadding;
 	self.scrollView.contentSize = CGSizeMake(self.scrollView.frame.size.width, newHeight);
-	
-	// Adjust frame of view if necessary
-	newHeight = (newHeight > maxFrameHeight) ? maxFrameHeight : newHeight;
-	if (self.frame.size.height != newHeight){
-		// Adjust self height
-		CGRect selfFrame = self.frame;
-		selfFrame.size.height = newHeight;
-        
-        // NOTE(SHIN): This causes recursive loop and OOM crash
-//		self.frame = selfFrame;
-		
-		// Adjust scroll view height
-		frame.size.height = newHeight;
+
+	CGFloat scale = [UIScreen mainScreen].scale;
+	CGFloat epsilon = 1.0 / scale;
+	CGFloat desiredHeight = (newHeight > maxFrameHeight) ? maxFrameHeight : newHeight;
+	CGFloat roundedHeight = round(desiredHeight * scale) / scale;
+	BOOL usesAutoLayout = (self.translatesAutoresizingMaskIntoConstraints == NO);
+
+	if (usesAutoLayout) {
+		// Auto Layout controls self.frame; avoid resizing here to prevent layout recursion.
+		frame.size.height = self.bounds.size.height;
 		self.scrollView.frame = frame;
-		
+
+		if (fabs(_lastReportedHeight - roundedHeight) >= epsilon) {
+			_lastReportedHeight = roundedHeight;
+			if ([self.delegate respondsToSelector:@selector(contactPickerDidResize:)]){
+				[self.delegate contactPickerDidResize:self];
+			}
+		}
+		return;
+	}
+
+	// Frame-based layout: adjust self height directly.
+	if (fabs(self.frame.size.height - roundedHeight) >= epsilon){
+		CGRect selfFrame = self.frame;
+		selfFrame.size.height = roundedHeight;
+		self.frame = selfFrame;
+	}
+
+	// Adjust scroll view height
+	frame.size.height = roundedHeight;
+	self.scrollView.frame = frame;
+
+	if (fabs(_lastReportedHeight - roundedHeight) >= epsilon) {
+		_lastReportedHeight = roundedHeight;
 		if ([self.delegate respondsToSelector:@selector(contactPickerDidResize:)]){
 			[self.delegate contactPickerDidResize:self];
 		}
